@@ -56,13 +56,13 @@ pipeline {
         }
 
         stage('Archivage du JAR') {
-            steps {
-                archiveArtifacts
-                    artifacts: 'backend/target/*.jar',
-                    fingerprint: true
-            }
-        }
+    		steps {
+        		archiveArtifacts(
+            			artifacts: 'backend/target/*.jar',
+            			fingerprint: true
+        )
     }
+}	
 
     post {
         success {
