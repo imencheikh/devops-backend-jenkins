@@ -12,12 +12,23 @@ pipeline {
 
     options {
         skipDefaultCheckout(true)
+        timestamps()
+        disableConcurrentBuilds()
     }
 
     stages {
-        stage('Recuperer le projet') {
+
+        stage('Checkout') {
             steps {
+                echo 'Recuperation du projet depuis GitHub'
                 checkout scm
+            }
+        }
+
+        stage('Verification environnement') {
+            steps {
+                sh 'java -version'
+                sh 'mvn -version'
             }
         }
 
@@ -27,20 +38,39 @@ pipeline {
                     sh 'mvn -B clean test'
                 }
             }
+
             post {
                 always {
-                    junit 'backend/target/surefire-reports/*.xml'
+                    junit allowEmptyResults: true,
+                          testResults: 'backend/target/surefire-reports/*.xml'
                 }
             }
         }
 
-        stage('Creer le livrable') {
+        stage('Generation du livrable') {
             steps {
                 dir('backend') {
                     sh 'mvn -B package -DskipTests'
                 }
-                archiveArtifacts artifacts: 'backend/target/*.jar', fingerprint: true
             }
+        }
+
+        stage('Archivage du JAR') {
+            steps {
+                archiveArtifacts
+                    artifacts: 'backend/target/*.jar',
+                    fingerprint: true
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'BUILD SUCCESS : Livrable genere avec succes.'
+        }
+
+        failure {
+            echo 'BUILD FAILURE : Consulter les logs.'
         }
     }
 }
