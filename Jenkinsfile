@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -27,6 +28,7 @@ pipeline {
 
         stage('Verification environnement') {
             steps {
+                echo 'Verification de Java et Maven'
                 sh 'java -version'
                 sh 'mvn -version'
             }
@@ -38,7 +40,6 @@ pipeline {
                     sh 'mvn -B clean test'
                 }
             }
-
             post {
                 always {
                     junit allowEmptyResults: true,
@@ -56,13 +57,14 @@ pipeline {
         }
 
         stage('Archivage du JAR') {
-    		steps {
-        		archiveArtifacts(
-            			artifacts: 'backend/target/*.jar',
-            			fingerprint: true
-        )
+            steps {
+                archiveArtifacts(
+                    artifacts: 'backend/target/*.jar',
+                    fingerprint: true
+                )
+            }
+        }
     }
-}	
 
     post {
         success {
@@ -74,3 +76,4 @@ pipeline {
         }
     }
 }
+
