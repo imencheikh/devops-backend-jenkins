@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -17,6 +16,10 @@ pipeline {
         disableConcurrentBuilds()
     }
 
+    environment {
+        IMAGE = 'imencheikh/backend-spring'
+    }
+
     stages {
 
         stage('Checkout') {
@@ -28,9 +31,9 @@ pipeline {
 
         stage('Verification environnement') {
             steps {
-                echo 'Verification de Java et Maven'
                 sh 'java -version'
                 sh 'mvn -version'
+                sh 'docker --version'
             }
         }
 
@@ -64,16 +67,38 @@ pipeline {
                 )
             }
         }
+
+        stage('Docker Build') {
+            steps {
+                dir('backend') {
+                    sh "docker build -t ${IMAGE}:${BUILD_NUMBER} -t ${IMAGE}:latest ."
+                }
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DH_USER',
+                    passwordVariable: 'DH_PASS')]) {
+                    sh 'echo "$DH_PASS" | docker login -u "$DH_USER" --password-stdin'
+                    sh "docker push ${IMAGE}:${BUILD_NUMBER}"
+                    sh "docker push ${IMAGE}:latest"
+                }
+            }
+        }
     }
 
     post {
-        success {
-            echo 'BUILD SUCCESS : Livrable genere avec succes.'
+        always {
+            sh 'docker logout || true'
         }
-
+        success {
+            echo "BUILD SUCCESS : ${IMAGE}:${BUILD_NUMBER} publiee sur Docker Hub."
+        }
         failure {
             echo 'BUILD FAILURE : Consulter les logs.'
         }
     }
 }
-
